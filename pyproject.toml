@@ -7,7 +7,11 @@ requires-python = ">=3.9"
 dependencies = [
     "gitignore-parser>=0.1.13",
     "pyyaml>=6.0.3",
+    "rich>=13.0.0",
 ]
+
+[project.scripts]
+agentic-cursorrules = "main:main"
 
 [dependency-groups]
 dev = ["pytest"]

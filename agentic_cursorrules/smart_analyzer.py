@@ -3,16 +3,12 @@ import os
 import yaml
 from collections import Counter
 import functools
-import json
-import urllib.request
-import time
 
 # Cache the extensions to avoid repeated network requests
 @functools.lru_cache(maxsize=1)
 def get_code_extensions():
-    """Get all programming language file extensions from a comprehensive GitHub list."""
-    extensions = set()
-    backup_extensions = {
+    """Get all programming language file extensions from a comprehensive local list."""
+    extensions = {
         # Web development
         '.html', '.htm', '.xhtml', '.css', '.scss', '.sass', '.less',
         '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte', '.php', '.asp', '.aspx',
@@ -79,44 +75,12 @@ def get_code_extensions():
         '.gd', '.cs', '.lua', '.js', '.ts', '.cpp', '.h', '.unity',
         '.unityproj', '.prefab', '.scene', '.mat', '.anim',
         
+        # Common config/documentation extensions
+        '.md', '.json', '.yaml', '.yml', '.toml', '.xml', '.ini', '.conf', '.config', 
+        '.env', '.rst', '.txt', '.lock', '.dockerfile', '.ipynb'
     }
     
-    try:
-        # URL for the raw JSON file of programming language extensions
-        url = "https://gist.githubusercontent.com/ppisarczyk/43962d06686722d26d176fad46879d41/raw/Programming_Languages_Extensions.json"
-        
-        print(f"Downloading language extensions from ppisarczyk's Programming_Languages_Extensions.json")
-        # Download the JSON data with a timeout
-        with urllib.request.urlopen(url, timeout=3) as response:
-            data = json.loads(response.read())
-        
-        # Extract all extensions from the JSON data, handling multiple extensions per key
-        for language in data:
-            if "extensions" in language:
-                for ext in language["extensions"]:
-                    # Handle comma-separated extensions
-                    if ',' in ext:
-                        for sub_ext in ext.split(','):
-                            sub_ext = sub_ext.strip()
-                            if sub_ext.startswith("."):
-                                extensions.add(sub_ext)
-                    # Handle single extensions
-                    elif ext.startswith("."):
-                        extensions.add(ext)
-        
-        print(f"Loaded {len(extensions)} file extensions from GitHub")
-        
-        # Add some common config/documentation extensions that might not be in the list
-        additional = {'.md', '.json', '.yaml', '.yml', '.toml', '.xml', '.ini', '.conf', '.config', 
-                     '.env', '.rst', '.txt', '.lock', '.dockerfile', '.ipynb'}
-        extensions.update(additional)
-        
-        return extensions
-        
-    except Exception as e:
-        print(f"Error fetching language extensions: {e}")
-        print("Using backup extension list instead")
-        return backup_extensions
+    return extensions
 
 class SmartCodeAnalyzer:
     """Smart code analyzer for efficient directory structure detection."""
@@ -137,7 +101,6 @@ class SmartCodeAnalyzer:
         
         # Get all code file extensions
         self.extensions = get_code_extensions()
-        print(f"Initialized with {len(self.extensions)} code file extensions")
         
     def analyze(self):
         """Perform multi-phase analysis of the project structure."""

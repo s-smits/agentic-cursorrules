@@ -1,82 +1,92 @@
 # agentic-cursorrules
 
-Partition large codebases into domain-specific contexts for multi-agent workflows. Generates isolated markdown rule files that prevent agent conflicts through explicit file-tree boundaries.
+**Give your AI agents a sense of place.**
 
-## Why agentic-cursorrules
+Partition large codebases into domain-specific contexts for multi-agent workflows. This tool generates isolated markdown rule files that prevent agent conflicts by giving them explicit file-tree boundaries.
 
-Traditional AI agent workflows give every helper the whole repository, which leads to conflicting edits and confusing cross-domain suggestions. Agentic-cursorrules keeps each agent inside a clearly defined slice of the tree, so conversations stay focused, diffs stay local, and coordination overhead drops without forcing the agents to understand the entire project at once.
+## Why this exists
+
+We've all been there: you give an AI agent access to your whole repository, and suddenly it's "refactoring" a utility file that breaks five other modules you didn't even mention.
+
+Traditional workflows drown agents in context they don't need. **Agentic-cursorrules** solves this by keeping each agent inside a clearly defined slice of the tree. Conversations stay focused, diffs stay local, and coordination overhead drops because your agents aren't trying to understand the entire universe at once.
 
 ## How it works
 
-Agentic-cursorrules reads a configuration that maps directory patterns to named domains. It can build that configuration automatically by scanning the filesystem or you can define the mapping yourself in `config.yaml`. When you run `main.py`, the tool resolves each domain, filters files using `.gitignore` rules, and writes per-domain markdown files that describe the boundaries and relevant paths. These markdown files are referenced inside your IDE so every AI agent receives only the context that matches its domain.
+At its core, this tool is a boundary manager. It reads a configuration (which it can auto-detect for you!) mapping directory patterns to named domains.
 
-## Quick start
+When you run it, it resolves these domains, respects your `.gitignore` rules, and writes per-domain markdown files (like `@agent_backend_api.md`). These files describe the boundaries, relevant paths, and guardrails for that specific domain. You reference these in your IDE (Cursor, Windsurf, etc.) so your AI helper knows exactly where its lane is—and stays in it.
 
-Prerequisites: Python 3.10+
+## Getting started
+
+You'll need Python 3.10+ and [uv](https://github.com/astral-sh/uv) (because life is too short for slow installs).
 
 ```bash
+# 1. Clone the repo
 git clone https://github.com/s-smits/agentic-cursorrules.git .agentic-cursorrules
 cd .agentic-cursorrules
 
-uv venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+# 2. Install dependencies
 uv sync
 
-cp .cursorrules.example ../.cursorrules
+# 3. Run the setup wizard
+uv run agentic-cursorrules --init
 ```
 
-### Dependency management
+The `--init` command is the friendliest way to start. It scans your project, guesses the logical domains, and builds a `config.yaml` for you interactively.
 
-- Install updates: `uv sync`
-- Add packages: `uv add <package>`
-- Remove packages: `uv remove <package>`
-- Run commands without activating the venv: `uv run python main.py --auto-config`
+## Using the tool
 
-## Usage
+### Auto-pilot mode
 
-### Automatic domain detection
-
+Just want to see what it finds?
 ```bash
-uv run python main.py --auto-config
+uv run agentic-cursorrules --auto-config
 ```
+This scans your repo and saves a `config_auto.yaml` without overwriting your main config. Great for checking if your folder structure makes sense to a machine.
 
-This scans the repository, builds a suggested domain mapping, and stores it in `detected_config.yaml`. Rerun the command to refresh the mapping after large refactors.
+### Taking control
 
-### Manual domain definition
-
-Edit `config.yaml` when you want to control boundaries precisely:
+For production use, you'll likely want to define your boundaries manually in `config.yaml`:
 
 ```yaml
-project_title: "your-project"
+project_title: "super-app"
 tree_focus:
-  - "backend/api"
-  - "frontend/components"
-  - "ml/training"
+  - "backend/api"       # The API team's domain
+  - "frontend/dashboard" # The dashboard team's domain
+  - "shared/utils"      # Everyone's favorite dumping ground
 ```
 
-Generate the agent files with:
-
+Then generate the files:
 ```bash
-uv run python main.py
+uv run agentic-cursorrules
 ```
 
-### Other entry points
+### Handy options
 
-- Inspect the current config without writing files: `uv run python main.py --verify-config`
-- Provide your own tree interactively: `uv run python main.py --tree-input`
-- Use the last detected config: `uv run python main.py --use-detected`
+- `--init`: The friendly setup wizard.
+- `--verify-config`: dry-run that shows you what config is loaded.
+- `--tree-input`: Paste a text-based file tree if you want to generate config from a diagram.
+- `--local-agents`: Keep the generated markdown files in the script directory (useful for testing without cluttering your actual project).
+- `--recurring`: Run continuously every minute (good for active development sessions).
 
-## Agent files
+## What you get
 
-Each domain produces a markdown file such as `@agent_backend_api.md` or `@agent_frontend_components.md`. Reference these from your IDE (for example, Cursor or Windsurf) when prompting an agent. The file lists the directories, key files, and guardrails that apply to that domain so the agent stays within its lane.
+For each domain, you get a markdown file like `@agent_backend_api.md`.
 
-## Repository layout (for orientation)
+Reference this file when you start a chat with your AI. It contains a visual tree of *only* the files that matter to that domain, along with instructions to "only reference and modify files within this structure." It's like putting blinders on a racehorse—it keeps them moving forward, fast.
+
+## Repository layout
+
+Just so you know where things are:
 
 ```
 .agentic-cursorrules/
-├── main.py             # orchestration and file generation
-├── config.yaml         # primary configuration
-├── config_manual.yaml  # sample manual setup
-├── smart_analyzer.py   # directory and extension detection logic
-└── tests/              # pytest-based checks
+├── agentic_cursorrules/          # The brains of the operation
+│   ├── agent_generator.py        # Writes the markdown files
+│   ├── config_updater.py         # Manages the yaml configs
+│   ├── project_tree_generator.py # Draws those pretty trees
+│   └── smart_analyzer.py         # Sherlock Holmes for your folder structure
+├── main.py                       # The entry point
+├── config.yaml                   # Your settings
+└── pyproject.toml                # Dependencies
 ```
